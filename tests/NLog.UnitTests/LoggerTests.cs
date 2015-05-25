@@ -31,6 +31,8 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using System.Collections.Generic;
+
 namespace NLog.UnitTests
 {
     using System.Reflection;
@@ -1217,6 +1219,47 @@ namespace NLog.UnitTests
             {
                 LastEvent = logEvent;
                 base.Write(logEvent);
+            }
+        }
+
+        [Fact]
+        public void DerivedLogger_CanModifyLogEvent()
+        {
+            LogManager.Configuration = CreateConfigurationFromString(@"
+                <nlog>
+                    <targets><target name='debug' type='Debug' layout='${event-context:InstanceId}|${message}' /></targets>
+                    <rules>
+                        <logger name='*' minLevel='Trace' writeTo='debug' />
+                    </rules>
+                </nlog>"); 
+            
+            var logger = (LoggerWithProperties)LogManager.GetLogger("Logger", typeof(LoggerWithProperties));
+            logger.Properties["InstanceId"] = 455;
+
+            logger.Debug("message");
+
+            AssertDebugLastMessage("debug", "455|message");
+        }
+
+
+        public class LoggerWithProperties : Logger
+        {
+            public LoggerWithProperties()
+            {
+                this.Properties = new Dictionary<object, object>();
+            }
+
+            public IDictionary<object, object> Properties { get; private set;  } 
+
+            protected override void OnPrepareLogEventInfo(LogEventInfo logEvent)
+            {
+                base.OnPrepareLogEventInfo(logEvent);
+                var properties = Properties;
+                if (properties != null)
+                {
+                    foreach (var property in properties)
+                        logEvent.Properties.Add(property);
+                }
             }
         }
 

@@ -391,15 +391,23 @@ namespace NLog
             LoggerImpl.Write(this.loggerType, this.GetTargetsForLevel(level), PrepareLogEventInfo(LogEventInfo.Create(level, this.Name, ex, formatProvider, message, args)), this.Factory);
         }
 
-
-        private LogEventInfo PrepareLogEventInfo(LogEventInfo logEvent)
+        private LogEventInfo PrepareLogEventInfo([NotNull] LogEventInfo logEvent)
         {
             if (logEvent.FormatProvider == null)
             {
                 logEvent.FormatProvider = this.Factory.DefaultCultureInfo;
             }
+            OnPrepareLogEventInfo(logEvent);
             return logEvent;
+        }
 
+        /// <summary>
+        ///  When overriden in inheritor this method provides the way to modify the <paramref name="logEvent"/>
+        ///  right before it is to be written to logging targets.
+        /// </summary>
+        /// <param name="logEvent">Logging event to be written to targets.</param>
+        protected virtual void OnPrepareLogEventInfo([NotNull] LogEventInfo logEvent)
+        {
         }
 
         #endregion
